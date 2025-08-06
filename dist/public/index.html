@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three.js 8-Ball Billiards</title>
+    <style>
+      html, body, #app { height: 100%; margin: 0; overflow: hidden; background: #0b0f14; }
+      #hud { position: absolute; top: 10px; left: 10px; color: #eee; font: 14px/1.2 system-ui, sans-serif; user-select: none; }
+      #powerBarWrap { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 420px; height: 18px; border: 1px solid #999; background: #1a1f25; }
+      #powerBar { height: 100%; width: 0%; background: linear-gradient(90deg, #4caf50, #ff9800, #f44336); transition: width 0.05s linear; }
+      #aimGuide { position: absolute; pointer-events: none; inset: 0; }
+      #btnRack { position: absolute; top: 10px; right: 10px; }
+      button { background:#263238; color:#ddd; border:1px solid #455a64; padding:6px 10px; cursor:pointer }
+      button:hover{ background:#37474f }
+    </style>
+    <script type="module" crossorigin src="/assets/index-DXQEwGgj.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <svg id="aimGuide"></svg>
+    <div id="hud">Click-drag to aim. Drag down to set power. Release to shoot. Hold Shift for fine aim. Mousewheel to zoom. R to re-rack.</div>
+    <div id="powerBarWrap"><div id="powerBar"></div></div>
+    <div id="btnRack"><button id="rerack">Re-rack (R)</button></div>
+  </body>
+</html>
