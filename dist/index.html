@@ -6,20 +6,29 @@
     <title>Three.js 8-Ball Billiards</title>
     <style>
       html, body, #app { height: 100%; margin: 0; overflow: hidden; background: #0b0f14; }
-      #hud { position: absolute; top: 10px; left: 10px; color: #eee; font: 14px/1.2 system-ui, sans-serif; user-select: none; }
+      #hud { position: absolute; top: 10px; left: 10px; color: #eee; font: 14px/1.4 system-ui, sans-serif; user-select: none; }
+      #gameStatus { font-size: 18px; font-weight: bold; margin-bottom: 8px; color: #4caf50; }
+      #instructions { font-size: 12px; opacity: 0.8; }
       #powerBarWrap { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 420px; height: 18px; border: 1px solid #999; background: #1a1f25; }
       #powerBar { height: 100%; width: 0%; background: linear-gradient(90deg, #4caf50, #ff9800, #f44336); transition: width 0.05s linear; }
+      #powerLabel { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font: 12px system-ui, sans-serif; color: #ccc; }
       #aimGuide { position: absolute; pointer-events: none; inset: 0; }
       #btnRack { position: absolute; top: 10px; right: 10px; }
-      button { background:#263238; color:#ddd; border:1px solid #455a64; padding:6px 10px; cursor:pointer }
+      button { background:#263238; color:#ddd; border:1px solid #455a64; padding:8px 12px; cursor:pointer; border-radius: 4px; font: 14px system-ui, sans-serif; }
       button:hover{ background:#37474f }
     </style>
   </head>
   <body>
     <div id="app"></div>
     <svg id="aimGuide"></svg>
-    <div id="hud">Click-drag to aim. Drag down to set power. Release to shoot. Hold Shift for fine aim. Mousewheel to zoom. R to re-rack.</div>
-    <div id="powerBarWrap"><div id="powerBar"></div></div>
+    <div id="hud">
+      <div id="gameStatus">Player 1 - Breaking</div>
+      <div id="instructions">Click-drag to aim. Drag down to set power. Release to shoot. Hold Shift for fine aim. Mousewheel to zoom. R to re-rack.</div>
+    </div>
+    <div id="powerBarWrap">
+      <div id="powerBar"></div>
+      <div id="powerLabel">Power</div>
+    </div>
     <div id="btnRack"><button id="rerack">Re-rack (R)</button></div>
     <script type="module" src="/src/main.js"></script>
   </body>

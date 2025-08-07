@@ -4,8 +4,11 @@ export default defineConfig({
   root: '.',
   publicDir: 'public',
   build: {
+    outDir: 'dist',
     rollupOptions: {
-      input: 'public/index.html'
+      input: {
+        main: 'public/index.html'
+      }
     }
   },
   server: {

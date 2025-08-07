@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { BALL } from './ball.js'
 import { TABLE } from './table.js'
+import { audioManager } from './audio.js'
+import { gameState } from './gamestate.js'
 
 const g = 9.81
 const mu_roll = 0.02
@@ -54,10 +56,25 @@ function railLimits(){
 function handleCushionCollision(b){
   const { halfX, halfZ } = railLimits()
   if(b.userData.inPocket) return
-  if(b.position.x < -halfX && b.userData.vel.x < 0){ b.position.x = -halfX; b.userData.vel.x *= -cushionRestitution; b.userData.spin.z *= 0.9 }
-  if(b.position.x >  halfX && b.userData.vel.x > 0){ b.position.x =  halfX; b.userData.vel.x *= -cushionRestitution; b.userData.spin.z *= 0.9 }
-  if(b.position.z < -halfZ && b.userData.vel.z < 0){ b.position.z = -halfZ; b.userData.vel.z *= -cushionRestitution; b.userData.spin.x *= 0.9 }
-  if(b.position.z >  halfZ && b.userData.vel.z > 0){ b.position.z =  halfZ; b.userData.vel.z *= -cushionRestitution; b.userData.spin.x *= 0.9 }
+  const speed = Math.hypot(b.userData.vel.x, b.userData.vel.z)
+  let collided = false
+  
+  if(b.position.x < -halfX && b.userData.vel.x < 0){ 
+    b.position.x = -halfX; b.userData.vel.x *= -cushionRestitution; b.userData.spin.z *= 0.9; collided = true 
+  }
+  if(b.position.x >  halfX && b.userData.vel.x > 0){ 
+    b.position.x =  halfX; b.userData.vel.x *= -cushionRestitution; b.userData.spin.z *= 0.9; collided = true 
+  }
+  if(b.position.z < -halfZ && b.userData.vel.z < 0){ 
+    b.position.z = -halfZ; b.userData.vel.z *= -cushionRestitution; b.userData.spin.x *= 0.9; collided = true 
+  }
+  if(b.position.z >  halfZ && b.userData.vel.z > 0){ 
+    b.position.z =  halfZ; b.userData.vel.z *= -cushionRestitution; b.userData.spin.x *= 0.9; collided = true 
+  }
+  
+  if(collided && speed > 0.5) {
+    audioManager.play('cushionHit', Math.min(speed / 5, 1))
+  }
 }
 
 function pocketCenters(){
@@ -77,6 +94,14 @@ function checkPockets(b){
       b.visible = false
       b.userData.vel.set(0,0,0)
       b.userData.spin.set(0,0,0)
+      audioManager.play('pocket', 0.8)
+      
+      gameState.ballsPocketed.push(b)
+      if(b.userData.number === 0) {
+        gameState.cueBallPocketed = true
+      } else if(b.userData.number === 8) {
+        gameState.eightBallPocketed = true
+      }
       return
     }
   }
@@ -89,32 +114,49 @@ function ballBallCollision(a,b){
   const minDist = 2*BALL.radius
   if(dist < minDist && dist > 1e-6){
     n.multiplyScalar(1/dist)
-    const penetration = minDist - dist
-    const corr = n.clone().multiplyScalar(penetration*0.5)
-    a.position.add(n.clone().multiplyScalar(-corr.length()))
-    b.position.add(corr)
+    
+    const overlap = minDist - dist
+    const separationForce = overlap * 0.5
+    a.position.addScaledVector(n, -separationForce)
+    b.position.addScaledVector(n, separationForce)
 
     const va = a.userData.vel, vb = b.userData.vel
-    const rel = new THREE.Vector3().subVectors(vb, va)
-    const vn = rel.dot(n)
-    if(vn < 0){
-      const j = -(1+restitution)*vn / (2)
-      const impulse = n.clone().multiplyScalar(j)
-      va.add(impulse)
-      vb.add(impulse.multiplyScalar(-1))
-
-      const tangent = new THREE.Vector3(rel.x - vn*n.x, 0, rel.z - vn*n.z)
-      const tl = tangent.length()
-      if(tl>1e-6){
-        tangent.multiplyScalar(1/tl)
-        const jt = -mu_slide * tl / 2
-        const tImp = tangent.clone().multiplyScalar(jt)
-        va.add(tImp)
-        vb.add(tImp.multiplyScalar(-1))
-        const spinImp = tangent.clone().multiplyScalar(0.1*jt)
-        a.userData.spin.add(spinImp)
-        b.userData.spin.add(spinImp.multiplyScalar(-1))
-      }
+    const relativeVel = new THREE.Vector3().subVectors(va, vb)
+    const velAlongNormal = relativeVel.dot(n)
+    
+    if(velAlongNormal > 0) return
+    
+    const e = restitution
+    let j = -(1 + e) * velAlongNormal
+    j /= 2
+    
+    const impulse = n.clone().multiplyScalar(j)
+    va.add(impulse)
+    vb.sub(impulse)
+    
+    relativeVel.subVectors(va, vb)
+    const tangent = relativeVel.clone().sub(n.clone().multiplyScalar(relativeVel.dot(n)))
+    if(tangent.length() < 1e-6) return
+    
+    tangent.normalize()
+    const jt = -relativeVel.dot(tangent) / 2
+    
+    const frictionImpulse = tangent.clone().multiplyScalar(Math.min(Math.abs(jt), j * mu_slide))
+    va.add(frictionImpulse)
+    vb.sub(frictionImpulse)
+    
+    const spinTransfer = 0.2
+    const spinImpulse = tangent.clone().multiplyScalar(jt * spinTransfer)
+    a.userData.spin.add(spinImpulse)
+    b.userData.spin.sub(spinImpulse)
+    
+    const collisionSpeed = Math.abs(velAlongNormal)
+    if(collisionSpeed > 0.3) {
+      audioManager.play('ballHit', Math.min(collisionSpeed / 3, 1))
+    }
+    
+    if(!gameState.firstBallHit && (a.userData.number === 0 || b.userData.number === 0)) {
+      gameState.firstBallHit = a.userData.number === 0 ? b : a
     }
   }
 }
